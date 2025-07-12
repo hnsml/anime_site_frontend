@@ -1,18 +1,18 @@
 import React from "react";
 import CardCollection from "./card-collection";
 
-interface TopUser {
+interface User {
+  id: string;
+  avatar: string;
+  name: string;
+  created_at: string;
+  comments_count: number;
+  achievements_count: number;
   rank: number;
-  avatarUrl: string;
-  username: string;
-  registration: string;
-  stars: string;
-  comments: string;
-  folders: string;
 }
 
 interface TopUserListProps {
-  users: TopUser[];
+  users: User[];
 }
 
 const TopUserList: React.FC<TopUserListProps> = ({ users }) => {

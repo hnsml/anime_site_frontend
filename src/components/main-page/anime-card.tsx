@@ -75,9 +75,6 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({
             <span className="text-[#918C8C] text-xs font-semibold mr-1 sm:text-sm">
               {imdbRating}
             </span>
-            <span className="text-[#918C8C] text-xs sm:text-sm">
-              ({imdbVotes})
-            </span>
           </div>
           <div className="flex w-full justify-between mt-auto gap-1 sm:gap-2">
             <div className="flex items-center border border-[#918C8C80] rounded-xl px-2 py-1 sm:px-3 sm:py-2">

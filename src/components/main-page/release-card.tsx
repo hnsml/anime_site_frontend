@@ -2,11 +2,14 @@ import React from "react";
 import Image from "next/image";
 
 interface ReleaseCardProps {
-  image?: string;
-  title?: string;
-  engTitle?: string;
-  episodes?: number;
-  date?: string;
+  id: string;
+  anime_id: string;
+  anime_name: string;
+  air_date: string;
+  month: string;
+  number: number;
+  slug: string;
+  anime_poster: string;
 }
 
 function getEpisodesText(episodes: number) {
@@ -19,30 +22,33 @@ function getEpisodesText(episodes: number) {
 }
 
 const ReleaseCard: React.FC<ReleaseCardProps> = ({
-  image = "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=150&h=200&fit=crop&crop=faces",
-  title = "Від селянина з глухроор.",
-  engTitle = "Katainaka no Ossan, Kensei ni Naru",
-  episodes = 8,
-  date = "20.05",
+  id,
+  anime_id,
+  anime_name,
+  air_date,
+  month,
+  number,
+  slug,
+  anime_poster,
 }) => (
   <div className="w-full h-[140px] rounded-2xl px-4 py-3 flex items-center">
     <div className="w-[120px] h-[180px] rounded-xl overflow-hidden flex-shrink-0 mr-4">
-      <Image src={image} alt={title} width={120} height={180} className="w-full h-full object-cover" />
+      <Image src={anime_poster} alt={anime_name} width={120} height={180} className="w-full h-full object-cover" />
     </div>
     <div className="flex flex-col flex-1 min-w-0">
       <div className="text-white text-lg font-semibold leading-tight whitespace-normal break-words">
-        {title}
+        {anime_name}
       </div>
       <div className="text-gray-400 text-xs whitespace-normal break-words">
-        {engTitle}
+        {anime_name}
       </div>
       <div className="flex items-center mt-1 gap-3 justify-between w-full">
-        <div className="text-gray-400 text-sm">{getEpisodesText(episodes)}</div>
+        <div className="text-gray-400 text-sm">{getEpisodesText(number)}</div>
         <span
           className="border border-[#4B7FCC] rounded-xl px-3 py-1 text-[#4B7FCC] font-medium text-sm leading-none"
           style={{ lineHeight: "20px" }}
         >
-          {date}
+          {air_date}
         </span>
       </div>
     </div>

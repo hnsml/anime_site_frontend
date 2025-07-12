@@ -10,9 +10,9 @@ interface TopAnimeCardProps {
   image: string;
   title: string;
   year: number| undefined;
-  type: string;
-  rank: number| null;
-  rating: number;
+  kind: string;
+  rank?: number| null;
+  imdb_score: number;
   showRank?: boolean;
   href?: string;
   small?: boolean;
@@ -23,9 +23,9 @@ const TopAnimeCard: FC<TopAnimeCardProps> = ({
   image,
   title,
   year,
-  type,
+  kind,
   rank,
-  rating,
+  imdb_score,
   showRank = true,
   href = "#",
   small = false,
@@ -71,9 +71,9 @@ const TopAnimeCard: FC<TopAnimeCardProps> = ({
         </p>
 
         <p className="mt-0.5 text-sm text-neutral-400">
-          {year} ● {type}
+          {year} ● {kind}
         </p>
-        {showRank && (
+        {/* {showRank && ( */}
           <div className="mt-1 flex items-center justify-between px-[2px]">
             <div className="flex items-center text-[14px] font-semibold text-white">
               <Crown
@@ -86,11 +86,12 @@ const TopAnimeCard: FC<TopAnimeCardProps> = ({
             </div>
 
             <div className="flex items-center text-[14px] font-semibold text-white">
-              {rating.toFixed(2)}
+              {imdb_score.toFixed(2)}
               <Star className="ml-1 h-[16px] w-[16px] fill-white text-white" />
             </div>
+
           </div>
-        )}
+        {/* )} */}
       </motion.div>
     </Link>
   );

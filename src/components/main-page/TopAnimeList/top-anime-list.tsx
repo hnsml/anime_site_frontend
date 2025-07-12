@@ -2,11 +2,16 @@ import React from "react";
 import TopAnimeCard from "./top-anime-card";
 
 interface Anime {
-  image: string;
-  title: string;
+  id: string;
+  name: string;
+  poster: string;
+  imdb_score: number;
+  duration?: number;
+  rank?: number;
+  related_seasons_count?: number;
+  first_air_date: string;
+  kind: string;
   year: number;
-  type: string;
-  rating: number;
 }
 
 interface TopAnimeListProps {
@@ -58,13 +63,13 @@ const TopAnimeList: React.FC<TopAnimeListProps> = ({
         <div className="grid lg:grid-cols-5 md:grid-cols-3 grid-cols-2 gap-x-6 gap-y-10 xs:gap-x-4 xs:gap-y-6">
           {items.map((anime, idx) => (
             <TopAnimeCard
-              key={anime.title + idx}
-              image={anime.image}
-              title={anime.title}
+              key={anime.name + idx}
+              image={anime.poster}
+              title={anime.name}
               year={anime.year}
-              type={anime.type}
-              rank={idx + 1}
-              rating={anime.rating}
+              kind={anime.kind}
+              rank={anime.rank}
+              imdb_score={anime.imdb_score}
               showRank={showRank}
             />
           ))}

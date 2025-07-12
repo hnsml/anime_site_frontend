@@ -1,12 +1,16 @@
 // basic ts component for the auth header
 import React from "react";
 import Image from "next/image";
+import { API_BASE_URL } from "@/config";
 
 export function AuthFooter({
   showRegister = true,
 }: {
   showRegister?: boolean;
 }) {
+  const handleGoogleAuth = () => {
+    window.location.href = `${API_BASE_URL}auth/google`;
+  };
   return (
     <div className="flex flex-col gap-6 items-center justify-center w-full mt-4">
       <Image
@@ -50,18 +54,20 @@ export function AuthFooter({
               />
             </span>
           </a>
-          <a href="#" aria-label="Google">
-            <span className="flex items-center justify-center w-[3rem] h-[3rem] md:w-18 md:h-18 rounded-full bg-blue hover:bg-dark-blue hover:cursor-pointer">
-              <Image
-                className="w-6 h-6 md:w-13 md:h-13 text-white bg-transparent rounded-full"
-                src="/assets/auth/google.svg"
-                alt="Logo"
-                width={24}
-                height={24}
-                unoptimized
-              />
-            </span>
-          </a>
+          <button
+            onClick={handleGoogleAuth}
+            aria-label="Google"
+            className="flex items-center justify-center w-[3rem] h-[3rem] md:w-18 md:h-18 rounded-full bg-blue hover:bg-dark-blue hover:cursor-pointer transition-colors"
+          >
+            <Image
+              className="w-6 h-6 md:w-13 md:h-13 text-white bg-transparent rounded-full"
+              src="/assets/auth/google.svg"
+              alt="Google"
+              width={24}
+              height={24}
+              unoptimized
+            />
+          </button>
           <a href="#" aria-label="Telegram">
             <span className="flex items-center justify-center w-[3rem] h-[3rem] md:w-18 md:h-18 rounded-full bg-blue hover:bg-dark-blue hover:cursor-pointer">
               <Image

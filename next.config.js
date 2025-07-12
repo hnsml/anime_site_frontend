@@ -13,6 +13,7 @@ const nextConfig = {
       "upload.wikimedia.org",
       "static.wikia.nocookie.net",
       'storageanimesite.blob.core.windows.net',
+      'lh3.googleusercontent.com',
     ],
   },
   webpack(config) {

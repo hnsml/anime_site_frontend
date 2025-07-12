@@ -1,6 +1,6 @@
 "use client";
 
-import { FC } from "react";
+import { FC, forwardRef } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { Star, Crown } from "lucide-react";
@@ -15,7 +15,7 @@ interface TopAnimeCardProps {
   cardClassName?: string;
 }
 
-const TopAnimeCard: FC<TopAnimeCardProps> = ({
+const TopAnimeCard = forwardRef<HTMLDivElement, TopAnimeCardProps>(({
   image,
   title,
   year,
@@ -23,11 +23,12 @@ const TopAnimeCard: FC<TopAnimeCardProps> = ({
   rank,
   rating,
   cardClassName = "",
-}) => {
+}, ref) => {
   const isTop1 = rank === 1;
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
@@ -83,6 +84,8 @@ const TopAnimeCard: FC<TopAnimeCardProps> = ({
       </div>
     </motion.div>
   );
-};
+});
+
+TopAnimeCard.displayName = 'TopAnimeCard';
 
 export default TopAnimeCard;

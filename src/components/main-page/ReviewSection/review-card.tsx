@@ -3,12 +3,11 @@ import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
 interface ReviewCardProps {
-  userName: string;
-  date: string;
-  title: string;
-  rating: number;
-  review?: string;
-  adminReply?: string;
+  user_name: string;
+  review_date: string;
+  anime_name: string;
+  number: number;
+  review: string;
   isLoading?: boolean;
 }
 
@@ -68,12 +67,11 @@ const HalfStar = () => (
 );
 
 const ReviewCard: React.FC<ReviewCardProps> = ({
-  userName,
-  date,
-  title,
-  rating,
+  user_name,
+  review_date,
+  anime_name,
+  number,
   review,
-  adminReply,
   isLoading = false,
 }) => {
   if (isLoading) {
@@ -103,18 +101,18 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
         <div className="flex items-center gap-2">
           <span className="inline-block w-3 h-3 rounded-full bg-[#1CB5E0] mr-2"></span>
           <span className="font-medium text-sm">
-            {userName.toUpperCase()},{" "}
-            <span className="text-[#CFCFCF] text-sm">{date}</span>
+            {user_name.toUpperCase()},{" "}
+            <span className="text-[#CFCFCF] text-sm">{review_date}</span>
           </span>
         </div>
         <span className="text-[#fff] text-sm font-normal text-right max-w-[220px]">
-          {title}
+          {anime_name}
         </span>
       </div>
-      <div className="flex gap-1 my-2" aria-label={`Оцінка: ${rating} з 5`}>
+      <div className="flex gap-1 my-2" aria-label={`Оцінка: ${number} з 5`}>
         {(() => {
-          const fullStars = Math.floor(rating);
-          const hasHalf = rating % 1 >= 0.5;
+          const fullStars = Math.floor(number);
+          const hasHalf = number % 1 >= 0.5;
           const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
           return [
             ...Array(fullStars).fill("full"),
@@ -133,38 +131,6 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
           ));
         })()}
       </div>
-      <div
-        className={`text-[#fff] text-lg leading-snug whitespace-pre-line ${
-          adminReply ? "mb-6" : "mb-0"
-        }`}
-      >
-        {review}
-      </div>
-      {adminReply && (
-        <div className="bg-transparent border-t border-[#232323] pt-4 mt-2">
-          <div className="flex items-center gap-2 mb-2 mt-2">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 20 18"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M1 17.2458L2.3 13.3458C-0.0239997 9.90882 0.874 5.47382 4.4 2.97182C7.926 0.470816 12.99 0.675816 16.245 3.45182C19.5 6.22882 19.94 10.7178 17.274 13.9528C14.608 17.1878 9.659 18.1678 5.7 16.2458L1 17.2458Z"
-                stroke="#787880"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span className="text-white text-sm font-semibold">
-              Відповідь адміна
-            </span>
-          </div>
-          <div className="text-[#fff] text-sm leading-snug">{adminReply}</div>
-        </div>
-      )}
     </div>
   );
 };

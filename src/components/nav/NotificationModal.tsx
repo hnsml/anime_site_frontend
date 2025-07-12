@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Settings } from "lucide-react";
 import { createPortal } from "react-dom";
-import axios from "axios";
+import { useAuth, createAuthenticatedFetch } from "@/contexts/auth-context";
 import { API_BASE_URL } from "@/config";
 
 interface Notification {
@@ -16,38 +16,54 @@ interface Notification {
 }
 
 interface Props {
-  open: boolean;
+  isOpen: boolean; // Renamed from 'open' to avoid conflict with window.open
   onClose: () => void;
   anchorRef: React.RefObject<HTMLButtonElement | null>;
+  onNotificationsRead?: () => void; // Add callback for when notifications are read
 }
 
-const NotificationModal: React.FC<Props> = ({ open, onClose, anchorRef }) => {
+const NotificationModal: React.FC<Props> = ({ isOpen, onClose, anchorRef, onNotificationsRead }) => {
   const popupRef = useRef<HTMLDivElement>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [pos, setPos] = useState({ top: 0, left: 0 });
+  const [mounted, setMounted] = useState(false);
+  const { token, isAuthenticated } = useAuth();
 
-  // Завантаження сповіщень при відкритті модалки
+  // Ensure component is mounted (client-side only)
   useEffect(() => {
-    if (!open) return;
+    setMounted(true);
+  }, []);
+
+  // Fetch notifications when modal opens
+  useEffect(() => {
+    if (!isOpen || !isAuthenticated || !token) return;
 
     async function fetchNotifications() {
       try {
-        const res = await axios.get<Notification[]>(`${API_BASE_URL}notifications`, {
-          withCredentials: true, // щоб передавати куки сесії
-        });
-        setNotifications(res.data);
+        // Add null check for token
+        if (!token) return;
+        
+        const authenticatedFetch = createAuthenticatedFetch(token);
+        const response = await authenticatedFetch(`${API_BASE_URL}notifications`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch notifications');
+        }
+        
+        const data = await response.json();
+        setNotifications(data);
       } catch (e) {
-        console.error("Не вдалося отримати сповіщення", e);
+        console.error("Failed to fetch notifications", e);
       }
     }
 
     fetchNotifications();
-  }, [open]);
+  }, [isOpen, isAuthenticated, token]);
 
-  // Обчислення позиції модалки відносно кнопки
+  // Position calculation relative to button
   useEffect(() => {
     function updatePos() {
-      if (open && anchorRef.current) {
+      if (isOpen && anchorRef.current) {
         const rect = anchorRef.current.getBoundingClientRect();
         setPos({ top: rect.bottom + 10, left: rect.right - 380 });
       }
@@ -59,11 +75,11 @@ const NotificationModal: React.FC<Props> = ({ open, onClose, anchorRef }) => {
       window.removeEventListener("scroll", updatePos);
       window.removeEventListener("resize", updatePos);
     };
-  }, [open, anchorRef]);
+  }, [isOpen, anchorRef]);
 
-  // Закриття при кліку поза модалкою
+  // Close when clicking outside
   useEffect(() => {
-    if (!open) return;
+    if (!isOpen) return;
 
     function handleClickOutside(e: MouseEvent) {
       if (
@@ -78,27 +94,41 @@ const NotificationModal: React.FC<Props> = ({ open, onClose, anchorRef }) => {
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open, onClose, anchorRef]);
+  }, [isOpen, onClose, anchorRef]);
 
-  // Позначити всі сповіщення як прочитані
+  // Mark all notifications as read
   const markAllRead = async () => {
+    if (!token) return;
+    
     try {
-      await axios.post(`${API_BASE_URL}notifications/mark_read`, null, {
-        withCredentials: true,
+      // Add explicit null check for TypeScript
+      if (!token) return;
+      
+      const authenticatedFetch = createAuthenticatedFetch(token);
+      const response = await authenticatedFetch(`${API_BASE_URL}notifications/mark_read`, {
+        method: 'POST',
       });
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, read_at: new Date().toISOString() }))
-      );
+      
+      if (response.ok) {
+        setNotifications((prev) =>
+          prev.map((n) => ({ ...n, read_at: new Date().toISOString() }))
+        );
+        // Call the callback to update unread count in parent component
+        onNotificationsRead?.();
+      }
     } catch (e) {
-      console.error("Не вдалося позначити як прочитані", e);
+      console.error("Failed to mark notifications as read", e);
     }
   };
 
-  if (typeof window === "undefined") return null;
+  // Don't render on server or if document.body is not available
+  if (!mounted || typeof window === "undefined" || !document.body || !isAuthenticated) {
+    return null;
+  }
 
-  return createPortal(
+  const modalContent = (
     <AnimatePresence>
-      {open && (
+      {isOpen && (
         <motion.div
           ref={popupRef}
           initial={{ opacity: 0, y: -10 }}
@@ -116,7 +146,10 @@ const NotificationModal: React.FC<Props> = ({ open, onClose, anchorRef }) => {
         >
           <div className="flex items-center justify-between px-4 py-4 border-b border-[#787880] rounded-t-2xl">
             <span className="text-white text-xl font-semibold">Сповіщення</span>
-            <button className="p-2 rounded-full hover:bg-[#23232A] transition" aria-label="Налаштування">
+            <button 
+              className="p-2 rounded-full hover:bg-[#23232A] transition" 
+              aria-label="Налаштування"
+            >
               <Settings className="w-5 h-5 text-white" />
             </button>
           </div>
@@ -160,9 +193,10 @@ const NotificationModal: React.FC<Props> = ({ open, onClose, anchorRef }) => {
           </div>
         </motion.div>
       )}
-    </AnimatePresence>,
-    document.body
+    </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default NotificationModal;

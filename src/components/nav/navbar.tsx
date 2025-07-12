@@ -7,9 +7,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { LayoutGrid, Users, Tag, List, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { Menu } from "@headlessui/react";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
+import { createAuthenticatedFetch } from "@/contexts/auth-context";
+import { API_BASE_URL } from "@/config";
 import SearchModal from "./SearchModal";
 import NotificationModal from "./NotificationModal";
 
@@ -35,12 +36,59 @@ const Navbar: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
   const isMobile = useIsMobile();
-  const { user } = useAuth();
+  const { user, isAuthenticated, logout, loading, token } = useAuth();
 
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [notifOpen, setNotifOpen] = React.useState(false);
   const [navOpen, setNavOpen] = React.useState(false);
+  const [unreadCount, setUnreadCount] = React.useState(0);
   const notifBtnRef = React.useRef<HTMLButtonElement>(null);
+
+  // Fetch unread notifications count
+  const fetchUnreadCount = React.useCallback(async () => {
+    if (!isAuthenticated || !token) return;
+
+    try {
+      const authenticatedFetch = createAuthenticatedFetch(token);
+      const response = await authenticatedFetch(`${API_BASE_URL}notifications/unread-count`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUnreadCount(data.count || 0);
+      }
+    } catch (error) {
+      console.error("Failed to fetch unread notifications count:", error);
+    }
+  }, [isAuthenticated, token]);
+
+  // Fetch unread count when user is authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      fetchUnreadCount();
+    } else {
+      setUnreadCount(0);
+    }
+  }, [isAuthenticated, fetchUnreadCount]);
+
+  // Handle notification read (callback for NotificationModal)
+  const handleNotificationsRead = React.useCallback(() => {
+    setUnreadCount(0);
+  }, []);
+
+  // Update unread count when notification modal is opened
+  const handleNotificationToggle = () => {
+    setNotifOpen((v) => {
+      const newState = !v;
+      // If opening the modal, refresh unread count after a short delay
+      // to account for any read status changes
+      if (newState) {
+        setTimeout(() => {
+          fetchUnreadCount();
+        }, 500);
+      }
+      return newState;
+    });
+  };
 
   if (!pathname) return null;
 
@@ -49,6 +97,17 @@ const Navbar: React.FC = () => {
   const currentItem = NAV_ITEMS.find(item => item.href.includes(currentBase));
   const currentLabel = currentItem?.label || "Меню";
   const CurrentIcon = currentItem?.icon || LayoutGrid;
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Still redirect even if logout request fails
+      router.push("/");
+    }
+  };
 
   return (
     <motion.header
@@ -102,7 +161,7 @@ const Navbar: React.FC = () => {
       )}
 
       <div className="xs:gap-2 flex items-center gap-6 sm:gap-4">
-        {!user ? (
+        {!isAuthenticated ? (
           <>
             <button
               className="rounded-xl border border-[#5B7CB2] bg-transparent px-6 py-2 text-sm font-medium text-white hover:bg-[#232b45]"
@@ -160,27 +219,35 @@ const Navbar: React.FC = () => {
             </button>
 
             {/* Кнопка нотифікацій */}
-            <button
-              ref={notifBtnRef}
-              className={`xs:w-8 xs:h-8 flex h-12 w-12 items-center justify-center rounded-xl border border-[#5B7CB2] bg-transparent p-0 transition sm:h-10 sm:w-10 ${notifOpen ? "bg-[#2C3650]" : "hover:bg-[#2C3650]"}`}
-              onClick={() => setNotifOpen((v) => !v)}
-            >
-              <svg
-                className="xs:w-4 xs:h-4 h-5 w-5 text-white sm:h-5 sm:w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
+            <div className="relative">
+              <button
+                ref={notifBtnRef}
+                className={`xs:w-8 xs:h-8 flex h-12 w-12 items-center justify-center rounded-xl border border-[#5B7CB2] bg-transparent p-0 transition sm:h-10 sm:w-10 ${notifOpen ? "bg-[#2C3650]" : "hover:bg-[#2C3650]"}`}
+                onClick={handleNotificationToggle}
               >
-                <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </button>
+                <svg
+                  className="xs:w-4 xs:h-4 h-5 w-5 text-white sm:h-5 sm:w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+              </button>
+              {/* Red notification badge */}
+              {unreadCount > 0 && (
+                <div className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-lg animate-pulse">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </div>
+              )}
+            </div>
 
             {/* Аватар і дропдаун */}
             <Menu as="div" className="relative">
               <Menu.Button className="focus:outline-none">
                 <Image
-                  src={user.avatar || "/default-avatar.png"}
+                  src={user?.avatar || "/default-avatar.png"}
                   alt="Аватар"
                   width={40}
                   height={40}
@@ -192,7 +259,7 @@ const Navbar: React.FC = () => {
                   {({ active }) => (
                     <Link
                       href="/profile"
-                      className={`block px-4 py-3 text-sm ${active ? "bg-[#2C3650]" : ""} text-white`}
+                      className={`block px-4 py-3 text-sm rounded-t-xl ${active ? "bg-[#2C3650]" : ""} text-white`}
                     >
                       Профіль
                     </Link>
@@ -221,10 +288,11 @@ const Navbar: React.FC = () => {
                 <Menu.Item>
                   {({ active }) => (
                     <button
-                      onClick={() => router.push("/logout")}
-                      className={`w-full text-left px-4 py-3 text-sm ${active ? "bg-[#2C3650]" : ""} text-white`}
+                      onClick={handleLogout}
+                      disabled={loading}
+                      className={`w-full text-left px-4 py-3 text-sm rounded-b-xl ${active ? "bg-[#2C3650]" : ""} text-white ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
-                      Вийти
+                      {loading ? "Виходимо..." : "Вийти"}
                     </button>
                   )}
                 </Menu.Item>
@@ -233,9 +301,10 @@ const Navbar: React.FC = () => {
 
             <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
             <NotificationModal
-              open={notifOpen}
+              isOpen={notifOpen}
               onClose={() => setNotifOpen(false)}
               anchorRef={notifBtnRef}
+              onNotificationsRead={handleNotificationsRead}
             />
           </>
         )}

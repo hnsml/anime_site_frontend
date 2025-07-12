@@ -1,12 +1,11 @@
 import ReviewCard from "@/components/main-page/ReviewSection/review-card";
 
 export type Review = {
-  userName: string;
-  date: string;
-  title: string;
-  rating: number;
+  user_name: string;
+  review_date: string;
+  anime_name: string;
+  number: number;
   review: string;
-  adminReply?: string;
 };
 
 interface ReviewSectionProps {

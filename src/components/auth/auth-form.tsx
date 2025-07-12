@@ -2,7 +2,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/auth-context";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,14 +26,24 @@ export function AuthForm({}: React.ComponentProps<"div">) {
   const passwordError =
     touched.password && !isPasswordValid ? "Введіть пароль" : "";
 
+  // Clear error when user starts typing
+  useEffect(() => {
+    if (error && (email || password)) {
+      // You might want to clear error when user starts typing
+      // This depends on your UX preferences
+    }
+  }, [email, password, error]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setTouched({ email: true, password: true });
+    
     if (isEmailValid && isPasswordValid) {
       const success = await login(email, password);
       if (success) {
         router.push("/");
       }
+      // If login fails, the error will be set in the auth context
     }
   }
 
@@ -51,6 +61,7 @@ export function AuthForm({}: React.ComponentProps<"div">) {
             onBlur={() => setTouched((t) => ({ ...t, email: true }))}
             required
             aria-invalid={touched.email && !isEmailValid}
+            disabled={loading}
           />
           {emailError && (
             <span className="pl-2 text-xs text-red-500">{emailError}</span>
@@ -67,6 +78,7 @@ export function AuthForm({}: React.ComponentProps<"div">) {
             onBlur={() => setTouched((t) => ({ ...t, password: true }))}
             required
             aria-invalid={touched.password && !isPasswordValid}
+            disabled={loading}
           />
           {passwordError && (
             <span className="pl-2 text-xs text-red-500">{passwordError}</span>
@@ -76,19 +88,28 @@ export function AuthForm({}: React.ComponentProps<"div">) {
               <Checkbox
                 className="data-[state=checked]:bg-blue border-blue h-5 w-5"
                 id="rememberUser"
+                disabled={loading}
               />
               <Label className="font-sans text-sm font-light text-white">
                 Запам'ятати мене
               </Label>
             </div>
             <a
-              href="#"
+              href="/forgot-password"
               className="ml-auto inline-block bg-transparent font-sans text-sm font-light text-white underline-offset-4 hover:underline"
             >
               Забули пароль?
             </a>
           </div>
         </div>
+        
+        {/* Show authentication error */}
+        {error && (
+          <div className="rounded-md bg-red-50 p-4 border border-red-200">
+            <span className="text-sm text-red-600">{error}</span>
+          </div>
+        )}
+        
         <div className="flex justify-center">
           <Button
             type="submit"
@@ -98,7 +119,7 @@ export function AuthForm({}: React.ComponentProps<"div">) {
               "rounded-[3.25rem]", // 52px / 16 = 3.25rem
               "px-0 py-0", // override default padding
               "h-[3.75rem] w-[7.5rem] md:w-[8.5rem]", // 136px = 8.5rem, 60px = 3.75rem
-              !isEmailValid || !isPasswordValid
+              !isEmailValid || !isPasswordValid || loading
                 ? "pointer-events-none opacity-60"
                 : "",
             )}
@@ -107,7 +128,6 @@ export function AuthForm({}: React.ComponentProps<"div">) {
             {loading ? "Вхід..." : "Далі"}
           </Button>
         </div>
-        {error && <span className="pl-2 text-xs text-red-500">{error}</span>}
       </div>
     </form>
   );

@@ -3,13 +3,13 @@ import CardCollection from "./card-collection";
 import CommentCard from "./CommentSection/comment-card";
 
 interface Comment {
-  avatarUrl: string;
-  username: string;
-  timeAgo: string;
-  text: string;
-  tag?: string;
-  animeTitle: string;
-  animeUrl?: string;
+  user_name: string;
+  user_avatar: string;
+  created_at: string;
+  text?: string;
+  title: string;
+  url:string;
+  type:string;
 }
 
 interface CommentCollectionProps {

@@ -8,7 +8,7 @@ import React from "react";
 export default function ProfileCard({ isLoading }: { isLoading: boolean }) {
   const avatarUrl = "assets/mock-user-logo.png";
   const username = "SakuraShadow";
-  const followerCount = 0;
+  const achievementsCount = 0;
   const followingCount = 0;
 
   return (
@@ -40,11 +40,7 @@ export default function ProfileCard({ isLoading }: { isLoading: boolean }) {
               </h1>
               <div className="flex flex-col lg:flex-row lg:gap-5">
                 <p className="text-[1rem] font-[500] text-[#918c8c]">
-                  <span className="text-white">{followerCount}</span> стежать
-                </p>
-                <p className="text-[1rem] font-[500] text-[#918c8c]">
-                  <span className="text-white">{followingCount}</span>{" "}
-                  відстежується
+                  <span className="text-white">{achievementsCount}</span> досягнень
                 </p>
               </div>
             </div>

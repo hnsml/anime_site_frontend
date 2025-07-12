@@ -51,11 +51,18 @@ interface LoginResponse {
   token: string;
 }
 
+interface RegisterResponse {
+  user: User;
+  token: string;
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<boolean>;
+  register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  setAuthData: (userData: User, tokenData: string) => void; // Added this method
   loading: boolean;
   error: string | null;
   isAuthenticated: boolean;
@@ -144,6 +151,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     storage.set(STORAGE_KEYS.TOKEN, tokenData);
   };
 
+  // Public method to set auth data (for external auth like OAuth)
+  const setAuthData = (userData: User, tokenData: string) => {
+    saveAuthData(userData, tokenData);
+  };
+
   // Clear auth data from state and localStorage
   const clearAuthData = () => {
     setUser(null);
@@ -218,6 +230,74 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const register = async (name: string, email: string, password: string): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // 1. Get CSRF cookie
+      await fetch(`${BACKEND_BASE_URL}sanctum/csrf-cookie`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
+
+      // 2. Registration request
+      const response = await fetch(`${API_BASE_URL}auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: JSON.stringify({ 
+          name, 
+          email, 
+          password,
+          password_confirmation: password // If your backend requires this
+        }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        // Handle registration errors
+        const errorData = await response.json().catch(() => ({}));
+        let message = "Помилка реєстрації. Спробуйте ще раз.";
+
+        if (errorData.message) {
+          message = errorData.message;
+        } else if (errorData.errors) {
+          // Handle validation errors
+          const errors = errorData.errors;
+          const firstError = Object.values(errors)[0];
+          message = Array.isArray(firstError) ? firstError[0] : 'Помилка валідації';
+        }
+
+        throw new Error(message);
+      }
+
+      const data: RegisterResponse = await response.json();
+
+      if (!data.user || !data.token) {
+        throw new Error("Invalid response: missing user or token");
+      }
+
+      saveAuthData(data.user, data.token);
+      return true;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "An unexpected error occurred";
+      setError(errorMessage);
+      console.error("Registration error:", error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = async (): Promise<void> => {
     setLoading(true);
     setError(null);
@@ -263,7 +343,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         user,
         token,
         login,
+        register,
         logout,
+        setAuthData, // Expose the setAuthData method
         loading,
         error,
         isAuthenticated,

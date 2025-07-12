@@ -5,13 +5,46 @@ import Link from "next/link";
 import TopAnimeCard from "@/components/top-anime-card";
 import StudioFilter from "@/components/studio-filter";
 
-// Example filter options (should be fetched from backend in real app)
-const statuses = ["Призупинено", "Онґоїнг", "Завершено", "Анонс", "Зупинено"];
+// Map frontend values to backend enum values - CORRECTED
+const statusMapping = {
+  "Анонс": "anons",
+  "Онґоїнг": "ongoing", 
+  "Завершено": "released",
+  "Зупинено": "canceled",
+  "Чутки": "rumored"
+};
+
+const typeMapping = {
+  "TV Серіал": "tv_series",
+  "Спешл": "tv_special",
+  "Фільм": "full_length", 
+  "Короткометражний фільм": "short_film",
+  "OVA": "ova",
+  "ONA": "ona"
+};
+
+const periodMapping = {
+  "Зима": "winter",
+  "Весна": "spring", 
+  "Літо": "summer",
+  "Осінь": "autumn"
+};
+
+const ageRatingMapping = {
+  "G": "g",
+  "PG": "pg",
+  "PG-13": "pg_13", 
+  "R": "r",
+  "NC-17": "nc_17"
+};
+
+// Example filter options - CORRECTED to match backend enums
+const statuses = ["Анонс", "Онґоїнг", "Завершено", "Зупинено", "Чутки"];
 const seasons = ["Зима", "Весна", "Літо", "Осінь"];
-const types = ["Спешл", "Фільм", "OVA", "ONA", "TV Серіал", "Музика"];
+const types = ["TV Серіал", "Спешл", "Фільм", "Короткометражний фільм", "OVA", "ONA"];
 const genres = [
   "Драма",
-  "Комедія",
+  "Комедія", 
   "Екшн",
   "Романтика",
   "Фентезі",
@@ -20,18 +53,16 @@ const genres = [
   "Історія",
 ];
 const sortOptions = [
-  { label: "За рейтингом", value: "rating" },
-  { label: "За роком", value: "year" },
-  { label: "За популярністю", value: "popularity" },
-  { label: "За кількістю епізодів", value: "episodes" },
+  { label: "За рейтингом", value: "imdb_score" },
+  { label: "За назвою", value: "name" },
+  { label: "За датою виходу", value: "first_air_date" },
 ];
 const ageRatings = [
   { label: "G", info: "Для всіх" },
   { label: "PG", info: "Дитяча аудиторія" },
   { label: "PG-13", info: "13+" },
   { label: "R", info: "17+" },
-  { label: "R PLUS", info: "17+ (жорсткіше)" },
-  { label: "R X", info: "18+" },
+  { label: "NC-17", info: "18+" },
 ];
 const studios: { label: string; value: string }[] = [];
 const minYear = 1965;
@@ -44,13 +75,19 @@ type FiltersState = {
   status: string[];
   season: string[];
   genres: string[];
+  tags: string[]; // Add tags separate from genres
   type: string[];
   localized: boolean;
   sort: string;
+  direction: string;
   age: string[];
   studio: string[];
   year: [number, number];
   search: string;
+  minScore: number | null;
+  maxScore: number | null;
+  minUserRating: number | null;
+  maxUserRating: number | null;
 };
 
 export default function AnimePage() {
@@ -59,73 +96,229 @@ export default function AnimePage() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  
+  // State for filter data from backend
+  const [filterData, setFilterData] = useState<{
+    genres: Array<{id: string, name: string}>;
+    tags: Array<{id: string, name: string}>; // Add tags
+    studios: Array<{id: string, name: string}>;
+    periods: Array<{value: string, name: string}>;
+  }>({
+    genres: [],
+    tags: [], // Add tags
+    studios: [],
+    periods: []
+  });
+  
   const [filters, setFilters] = useState<FiltersState>({
     status: [],
     season: [],
     genres: [],
+    tags: [], // Add tags
     type: [],
     localized: false,
-    sort: "rating",
+    sort: "imdb_score",
+    direction: "desc",
     age: [],
     studio: [],
     year: [minYear, maxYear],
     search: "",
+    minScore: null,
+    maxScore: null,
+    minUserRating: null,
+    maxUserRating: null,
   });
 
-  // Build query string for backend
+  // Fetch filter data from backend
+  const fetchFilterData = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}animes/filters`);
+      if (res.ok) {
+        const data = await res.json();
+        setFilterData(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch filter data:", e);
+    }
+  }, []);
+
+  // Fetch filter data on component mount
+  useEffect(() => {
+    fetchFilterData();
+  }, [fetchFilterData]);
+
+  // Build query string for backend - properly mapped to Laravel backend expectations
   const buildQuery = () => {
     const params = new URLSearchParams();
-    if (filters.status.length)
-      params.append("status", filters.status.join(","));
-    if (filters.season.length)
-      params.append("season", filters.season.join(","));
-    if (filters.genres.length)
-      params.append("genres", filters.genres.join(","));
-    if (filters.type.length) params.append("type", filters.type.join(","));
-    if (filters.localized) params.append("localized", "1");
-    if (filters.sort) params.append("sort", filters.sort);
-    if (filters.age.length) params.append("age", filters.age.join(","));
-    if (filters.studio.length)
-      params.append("studio", filters.studio.join(","));
-    if (filters.year) params.append("year_from", String(filters.year[0]));
-    if (filters.year) params.append("year_to", String(filters.year[1]));
-    if (filters.search) params.append("search", filters.search);
+    
+    // Search query
+    if (filters.search.trim()) {
+      params.append("q", filters.search.trim());
+    }
+    
+    // Status mapping
+    if (filters.status.length) {
+      const mappedStatuses = filters.status.map(s => statusMapping[s as keyof typeof statusMapping]).filter(Boolean);
+      if (mappedStatuses.length) {
+        params.append("statuses", mappedStatuses.join(","));
+      }
+    }
+    
+    // Type/Kind mapping  
+    if (filters.type.length) {
+      const mappedTypes = filters.type.map(t => typeMapping[t as keyof typeof typeMapping]).filter(Boolean);
+      if (mappedTypes.length) {
+        params.append("kinds", mappedTypes.join(","));
+      }
+    }
+
+    // Period/Season mapping
+    if (filters.season.length) {
+      const mappedPeriods = filters.season.map(s => periodMapping[s as keyof typeof periodMapping]).filter(Boolean);
+      if (mappedPeriods.length) {
+        params.append("periods", mappedPeriods.join(","));
+      }
+    }
+    
+    // Age rating mapping (if you add restricted_rating filter to backend)
+    if (filters.age.length) {
+      const mappedAge = filters.age.map(a => ageRatingMapping[a as keyof typeof ageRatingMapping]).filter(Boolean);
+      if (mappedAge.length) {
+        // Now enabled since you have restricted_rating filter in your backend
+        params.append("restricted_ratings", mappedAge.join(","));
+      }
+    }
+    
+    // Studio IDs - now using real studio IDs from backend
+    if (filters.studio.length) {
+      params.append("studio_ids", filters.studio.join(","));
+    }
+    
+    // Genre IDs - now using real genre IDs from backend
+    if (filters.genres.length) {
+      // Map genre names to IDs
+      const genreIds = filters.genres.map(genreName => {
+        const genre = filterData.genres.find(g => g.name === genreName);
+        return genre?.id;
+      }).filter(Boolean);
+      
+      if (genreIds.length) {
+        params.append("tag_ids", genreIds.join(","));
+      }
+    }
+
+    // Tag IDs - using real tag IDs from backend (separate from genres)
+    if (filters.tags.length) {
+      // Map tag names to IDs
+      const tagIds = filters.tags.map(tagName => {
+        const tag = filterData.tags.find(t => t.name === tagName);
+        return tag?.id;
+      }).filter(Boolean);
+      
+      if (tagIds.length) {
+        // If you have both genres and tags selected, combine them
+        const existingTagIds = params.get("tag_ids");
+        if (existingTagIds) {
+          params.set("tag_ids", existingTagIds + "," + tagIds.join(","));
+        } else {
+          params.append("tag_ids", tagIds.join(","));
+        }
+      }
+    }
+    
+    // Year range
+    if (filters.year[0] > minYear) {
+      params.append("min_year", String(filters.year[0]));
+    }
+    if (filters.year[1] < maxYear) {
+      params.append("max_year", String(filters.year[1]));
+    }
+    
+    // IMDB Score range
+    if (filters.minScore !== null) {
+      params.append("min_score", String(filters.minScore));
+    }
+    if (filters.maxScore !== null) {
+      params.append("max_score", String(filters.maxScore));
+    }
+
+    // User Rating range
+    if (filters.minUserRating !== null) {
+      params.append("min_user_rating", String(filters.minUserRating));
+    }
+    if (filters.maxUserRating !== null) {
+      params.append("max_user_rating", String(filters.maxUserRating));
+    }
+    
+    // Sorting
+    if (filters.sort) {
+      params.append("sort", filters.sort);
+    }
+    if (filters.direction) {
+      params.append("direction", filters.direction);
+    }
+    
+    // Pagination
     params.append("page", String(page));
     params.append("per_page", "20");
+    
     return params.toString();
   };
 
   const fetchAnimes = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const query = buildQuery();
-    //TODO FILTERING IS NOT WORKING ON BACKEND
-    //const url = `${API_BASE_URL}animes?${query}`;
-    const url = `${API_BASE_URL}animes?`;
-    console.log("Fetching:", url);
+    
     try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch");
+      const query = buildQuery();
+      const url = `${API_BASE_URL}animes?${query}`;
+      console.log("Fetching:", url);
+      console.log("Query params:", query);
+      
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log("Response status:", res.status);
+      console.log("Response headers:", res.headers);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Error response:", errorText);
+        throw new Error(`HTTP ${res.status}: ${errorText}`);
+      }
+      
       const data = await res.json();
+      console.log("Response data:", data);
+      
       setHasMore((data.meta?.current_page || 1) < (data.meta?.last_page || 1));
-      setAnimes(
-        page === 1 ? data.data : (prev: any) => [...prev, ...data.data],
-      );
+      
+      if (page === 1) {
+        setAnimes(data.data);
+      } else {
+        setAnimes(prev => [...prev, ...data.data]);
+      }
     } catch (e: any) {
+      console.error("Fetch error:", e);
       setError(e.message || "Unknown error");
     } finally {
       setLoading(false);
     }
   }, [filters, page]);
 
+  // Reset page when filters change
   useEffect(() => {
     setPage(1);
   }, [filters]);
 
+  // Fetch data when filters or page changes
   useEffect(() => {
     fetchAnimes();
-    // eslint-disable-next-line
-  }, [filters, page]);
+  }, [fetchAnimes]);
 
   // Infinite scroll
   const observer = useRef<IntersectionObserver | null>(null);
@@ -182,7 +375,7 @@ export default function AnimePage() {
   );
 
   const toggleFilter = useCallback((key: string, value: string) => {
-    if (["status", "season", "genres", "type", "age"].includes(key)) {
+    if (["status", "season", "genres", "tags", "type", "age"].includes(key)) { // Add tags
       setFilters((prev) => {
         const arr = (prev as any)[key] as string[];
         return {
@@ -194,26 +387,36 @@ export default function AnimePage() {
       });
     }
   }, []);
+  
   const setSingleFilter = useCallback((key: string, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   }, []);
+  
   const setYearRange = useCallback((range: [number, number]) => {
     setFilters((prev) => ({ ...prev, year: range }));
   }, []);
+  
   const clearFilters = useCallback(() => {
     setFilters({
       status: [],
       season: [],
       genres: [],
+      tags: [], // Add tags
       type: [],
       localized: false,
-      sort: "rating",
+      sort: "imdb_score",
+      direction: "desc",
       age: [],
       studio: [],
       year: [minYear, maxYear],
       search: "",
+      minScore: null,
+      maxScore: null,
+      minUserRating: null,
+      maxUserRating: null,
     });
   }, []);
+  
   const handleGenresOptionClick = useCallback((g: string) => {
     setFilters((prev) => ({
       ...prev,
@@ -222,10 +425,12 @@ export default function AnimePage() {
         : [...prev.genres, g],
     }));
   }, []);
+  
   const handleGenresClear = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setFilters((prev) => ({ ...prev, genres: [] }));
   }, []);
+  
   const handleGenresTagRemove = useCallback(
     (g: string, e: React.MouseEvent) => {
       e.stopPropagation();
@@ -236,6 +441,46 @@ export default function AnimePage() {
     },
     [],
   );
+
+  // Add tag handlers
+  const [tagsOpen, setTagsOpen] = useState(false);
+  const tagsRef = useRef<HTMLDivElement | null>(null);
+  const handleTagsClick = useCallback(() => setTagsOpen((v) => !v), []);
+  useEffect(() => {
+    if (!tagsOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (tagsRef.current && !tagsRef.current.contains(e.target as Node))
+        setTagsOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [tagsOpen]);
+
+  const handleTagsOptionClick = useCallback((t: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      tags: prev.tags.includes(t)
+        ? prev.tags.filter((x) => x !== t)
+        : [...prev.tags, t],
+    }));
+  }, []);
+
+  const handleTagsClear = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFilters((prev) => ({ ...prev, tags: [] }));
+  }, []);
+
+  const handleTagsTagRemove = useCallback(
+    (t: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      setFilters((prev) => ({
+        ...prev,
+        tags: prev.tags.filter((x) => x !== t),
+      }));
+    },
+    [],
+  );
+  
   const handleStudiosOptionClick = useCallback((val: string) => {
     setFilters((prev) => ({
       ...prev,
@@ -244,10 +489,12 @@ export default function AnimePage() {
         : [...prev.studio, val],
     }));
   }, []);
+  
   const handleStudiosClear = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setFilters((prev) => ({ ...prev, studio: [] }));
   }, []);
+  
   const handleStudiosTagRemove = useCallback(
     (val: string, e: React.MouseEvent) => {
       e.stopPropagation();
@@ -284,35 +531,93 @@ export default function AnimePage() {
               }
             />
           </div>
+          
+          {/* Sort options */}
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+            <label className="mb-1 min-w-[80px] text-base font-semibold text-white sm:mr-2 sm:mb-0">
+              Сортування
+            </label>
+            <select
+              value={filters.sort}
+              onChange={(e) => setSingleFilter("sort", e.target.value)}
+              className="w-full max-w-md rounded-lg border border-[#232B39] bg-[#181F2A] px-4 py-2 text-white focus:border-blue-400 focus:outline-none"
+            >
+              {sortOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filters.direction}
+              onChange={(e) => setSingleFilter("direction", e.target.value)}
+              className="w-full max-w-[120px] rounded-lg border border-[#232B39] bg-[#181F2A] px-4 py-2 text-white focus:border-blue-400 focus:outline-none"
+            >
+              <option value="desc">За спаданням</option>
+              <option value="asc">За зростанням</option>
+            </select>
+          </div>
+
+          {/* User Rating Range */}
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+            <label className="mb-1 min-w-[80px] text-base font-semibold text-white sm:mr-2 sm:mb-0">
+              Рейтинг користувачів
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min="0"
+                max="10"
+                step="0.1"
+                value={filters.minUserRating || ''}
+                onChange={(e) => setSingleFilter("minUserRating", e.target.value ? parseFloat(e.target.value) : null)}
+                className="w-20 rounded-lg border border-[#232B39] bg-[#181F2A] px-2 py-1 text-white focus:border-blue-400 focus:outline-none"
+                placeholder="Мін"
+              />
+              <span className="text-white">-</span>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                step="0.1"
+                value={filters.maxUserRating || ''}
+                onChange={(e) => setSingleFilter("maxUserRating", e.target.value ? parseFloat(e.target.value) : null)}
+                className="w-20 rounded-lg border border-[#232B39] bg-[#181F2A] px-2 py-1 text-white focus:border-blue-400 focus:outline-none"
+                placeholder="Макс"
+              />
+            </div>
+          </div>
         </div>
+        
         {error && <div className="text-center text-red-500">{error}</div>}
+        
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-  {animes.map((anime: any, idx: number) => (
-    <Link key={anime.id || idx} href={`/anime/${anime.slug}`} passHref>
-      
-        <TopAnimeCard
-          image={anime.poster || anime.poster_url || ""}
-          title={anime.name || anime.title || ""}
-          cardClassName="min-w-0 w-auto"
-          year={
-            anime.year ||
-            (anime.first_air_date
-              ? Number(anime.first_air_date.slice(0, 4))
-              : 0)
-          }
-          type={anime.kind || "-"}
-          rank={anime.rank || idx + 1}
-          rating={anime.imdb_score ?? 0}
-        />
-      
-    </Link>
-  ))}
-</div>
+          {animes.map((anime: any, idx: number) => (
+            <Link key={anime.id || idx} href={`/anime/${anime.slug}`} passHref>
+              <TopAnimeCard
+                image={anime.poster || anime.poster_url || ""}
+                title={anime.name || anime.title || ""}
+                cardClassName="min-w-0 w-auto"
+                year={
+                  anime.year ||
+                  (anime.first_air_date
+                    ? Number(anime.first_air_date.slice(0, 4))
+                    : 0)
+                }
+                type={anime.kind || "-"}
+                rank={anime.rank || idx + 1}
+                rating={anime.imdb_score ?? 0}
+                ref={idx === animes.length - 1 ? lastAnimeRef : null}
+              />
+            </Link>
+          ))}
+        </div>
+        
         {loading && (
           <div className="text-center text-white">Завантаження...</div>
         )}
-        <div ref={lastAnimeRef} />
       </div>
+      
       {/* Sidebar filters */}
       <aside
         className="hidden w-72 flex-shrink-0 md:block"
@@ -324,27 +629,25 @@ export default function AnimePage() {
           setSingleFilter={setSingleFilter as any}
           setYearRange={setYearRange}
           clearFilters={clearFilters}
-          genres={genres}
+          genres={filterData.genres.map(g => g.name)} // Use dynamic genres from backend
           genresOpen={genresOpen}
           genresRef={genresRef}
           handleGenresClick={handleGenresClick}
           handleGenresOptionClick={handleGenresOptionClick}
           handleGenresClear={handleGenresClear}
           handleGenresTagRemove={handleGenresTagRemove}
+          // Add tags props
+          tags={filterData.tags.map(t => t.name)} // Use dynamic tags from backend
+          tagsOpen={tagsOpen}
+          tagsRef={tagsRef}
+          handleTagsClick={handleTagsClick}
+          handleTagsOptionClick={handleTagsOptionClick}
+          handleTagsClear={handleTagsClear}
+          handleTagsTagRemove={handleTagsTagRemove}
           types={types}
           statuses={statuses}
           seasons={seasons}
           ageRatings={ageRatings}
-          // studios={studios}
-          // studiosOpen={studiosOpen}
-          // studiosRef={studiosRef}
-          // studiosSearch={studiosSearch}
-          // handleStudiosClick={handleStudiosClick}
-          // handleStudiosSearch={handleStudiosSearch}
-          // filteredStudios={filteredStudios}
-          // handleStudiosOptionClick={handleStudiosOptionClick}
-          // handleStudiosClear={handleStudiosClear}
-          // handleStudiosTagRemove={handleStudiosTagRemove}
           minYear={minYear}
           maxYear={maxYear}
           isMobile={false}

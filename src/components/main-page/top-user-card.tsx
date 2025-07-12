@@ -2,23 +2,23 @@ import React from "react";
 import Image from "next/image";
 
 interface TopUserCardProps {
+  id: string;
+  avatar: string;
+  name: string;
+  created_at: string;
+  comments_count: number;
+  achievements_count: number;
   rank: number;
-  avatarUrl: string;
-  username: string;
-  registration: string;
-  stars: string;
-  comments: string;
-  folders: string;
 }
 
 const TopUserCard: React.FC<TopUserCardProps> = ({
+  id,
+  avatar,
+  name,
+  created_at,
+  comments_count,
+  achievements_count,
   rank,
-  avatarUrl,
-  username,
-  registration,
-  stars,
-  comments,
-  folders,
 }) => {
   const getCrownColor = (rank: number) => {
     if (rank === 1) return "#FFD700";
@@ -48,8 +48,8 @@ const TopUserCard: React.FC<TopUserCardProps> = ({
 
       <div className="w-24 h-24 xs:w-16 xs:h-16 rounded-full overflow-hidden flex-shrink-0">
         <Image
-          src={avatarUrl}
-          alt={username}
+          src={avatar}
+          alt={name}
           width={96}
           height={96}
           className="w-full h-full object-cover"
@@ -59,10 +59,10 @@ const TopUserCard: React.FC<TopUserCardProps> = ({
 
       <div className="flex-1 flex flex-col items-start justify-center">
         <div className="text-white font-bold text-base mb-0.5 xs:text-sm">
-          {username}
+          {name}
         </div>
         <div className="text-gray-400 text-xs mb-2 xs:text-[10px]">
-          Реєстрація: {registration}
+          Реєстрація: {created_at}
         </div>
 
         <div className="flex items-center gap-6 xs:gap-3">
@@ -78,7 +78,7 @@ const TopUserCard: React.FC<TopUserCardProps> = ({
               />
             </svg>
             <span className="text-white text-sm xs:text-xs font-semibold">
-              {stars}
+              {achievements_count}
             </span>
           </div>
 
@@ -94,23 +94,7 @@ const TopUserCard: React.FC<TopUserCardProps> = ({
               />
             </svg>
             <span className="text-white text-sm xs:text-xs font-semibold">
-              {comments}
-            </span>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <svg
-              className="w-6 h-6 xs:w-3 xs:h-3 text-gray-400 mb-0.5"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M18.6252 1.73536H11.3179C11.0959 1.73604 10.8788 1.67078 10.694 1.54786L9.39083 0.67645C8.95931 0.387894 8.45165 0.234341 7.93255 0.235357H4.3752C3.67924 0.236101 3.01199 0.512902 2.51987 1.00502C2.02775 1.49715 1.75095 2.16439 1.7502 2.86036V3.98536H21.2502C21.2502 2.53786 20.0727 1.73536 18.6252 1.73536ZM19.3635 18.2354H3.63692C2.94814 18.2346 2.28727 17.9631 1.79682 17.4795C1.30638 16.9959 1.02566 16.3389 1.0152 15.6502L0.258639 7.92801V7.91489C0.233864 7.60538 0.273417 7.29409 0.37481 7.00062C0.476203 6.70714 0.637241 6.43783 0.84779 6.20962C1.05834 5.98142 1.31384 5.79926 1.59822 5.67461C1.8826 5.54997 2.1897 5.48553 2.5002 5.48536H20.5049C20.8153 5.48566 21.1223 5.55019 21.4066 5.6749C21.6908 5.7996 21.9462 5.98178 22.1567 6.20997C22.3671 6.43816 22.5281 6.70743 22.6294 7.00084C22.7308 7.29425 22.7703 7.60546 22.7455 7.91489V7.92801L21.9852 15.6502C21.9747 16.3389 21.694 16.9959 21.2036 17.4795C20.7131 17.9631 20.0523 18.2346 19.3635 18.2354Z"
-                fill="#918C8C"
-              />
-            </svg>
-            <span className="text-white text-sm xs:text-xs font-semibold">
-              {folders}
+              {comments_count}
             </span>
           </div>
         </div>

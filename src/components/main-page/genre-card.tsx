@@ -3,23 +3,21 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
+interface AnimeShort {
+  poster: string;
+}
 interface GenreCardProps {
-  title?: string;
-  description?: React.ReactNode;
-  animeImages?: string[];
-  href: string;
+  name: string;
+  description: string;
+  slug:string;
+  animes_posters: AnimeShort[];
 }
 
 const GenreCard: React.FC<GenreCardProps> = ({
-  title = "Драма",
+  name,
   description,
-  animeImages = [
-    "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=140&h=200&fit=crop&crop=faces",
-    "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=140&h=200&fit=crop&crop=center",
-    "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=140&h=200&fit=crop&crop=top",
-    "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=140&h=200&fit=crop&crop=bottom",
-  ],
-  href = "",
+  slug,
+  animes_posters,
 }) => {
   const [isMobile, setIsMobile] = useState<null | boolean>(null);
 
@@ -34,52 +32,42 @@ const GenreCard: React.FC<GenreCardProps> = ({
 
   if (isMobile === null) return null;
 
-  const defaultDescription = (
-    <>
-      Цей жанр зосереджується на{" "}
-      <span className="text-blue-400">емоційних</span> та{" "}
-      <span className="text-blue-400">психологічних</span> переживаннях
-      персонажів. Такі історії часто торкаються серйозних тем — втрат,
-      особистісного зростання, стосунків, внутрішніх конфліктів.
-    </>
-  );
-
+console.log({animes_posters});
   return (
-    <Link href={href} className="block w-full group" tabIndex={0}>
+    // <Link href={href} className="block w-full group" tabIndex={0}>
       <div className="w-full flex flex-row relative cursor-pointer group-hover:opacity-90 transition-opacity">
         <div className="flex flex-col justify-start z-10 flex-shrink-0 w-[200px] md:w-[300px] lg:w-[420px]">
           <h2 className="text-white text-3xl font-bold mb-6 leading-tight">
-            {title}
+            {name}
           </h2>
           <div className="text-gray-300 text-base leading-relaxed font-normal break-words px-2 max-w-full">
-            {description || defaultDescription}
+            {description}
           </div>
         </div>
 
         <div className="flex items-center ml-3 md:ml-12 flex-grow w-full">
           <div className="flex flex-row items-center relative">
-            {(isMobile ? animeImages.slice(0, 1) : animeImages).map(
-              (img, idx) => (
-                <div
-                  key={idx}
-                  className="relative"
-                  style={{
-                    zIndex: animeImages.length - idx,
-                    marginLeft: idx === 0 ? 0 : -16,
-                  }}
-                >
-                  <div className="rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-purple-600 to-blue-600 w-32 h-48 md:w-[140px] md:h-[200px]">
-                    <Image
-                      src={img}
-                      alt={`anime-${idx}`}
-                      fill
-                      className="w-full h-full object-cover"
-                      style={{ filter: "brightness(0.9) contrast(1.1)" }}
-                    />
-                  </div>
-                </div>
-              )
-            )}
+          {Array.isArray(animes_posters) && (isMobile ? animes_posters.slice(0, 1) : animes_posters).map((item, idx) => (
+  <div
+    key={idx}
+    className="relative"
+    style={{
+      zIndex: animes_posters.length - idx,
+      marginLeft: idx === 0 ? 0 : -16,
+    }}
+  >
+    <div className="rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-purple-600 to-blue-600 w-32 h-48 md:w-[140px] md:h-[200px]">
+      <Image
+        src={item.poster}
+        alt={`anime-${idx}`}
+        fill
+        className="w-full h-full object-cover"
+        style={{ filter: "brightness(0.9) contrast(1.1)" }}
+      />
+    </div>
+  </div>
+))}
+
           </div>
           <div className="flex-grow" />
           <div className="ml-3 md:ml-8 flex items-center justify-end">
@@ -106,7 +94,7 @@ const GenreCard: React.FC<GenreCardProps> = ({
           </div>
         </div>
       </div>
-    </Link>
+    // </Link>
   );
 };
 

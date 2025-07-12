@@ -71,12 +71,6 @@ export default function FavouritesTabs({ isLoading }: { isLoading: boolean }) {
             >
               Персонажі
             </TabsTrigger>
-            <TabsTrigger
-              className="hover:text-blue! text-white transition-colors aria-selected:bg-[#78788066]!"
-              value="collections"
-            >
-              Колекції
-            </TabsTrigger>
           </div>
           <Button
             variant="secondary"
