@@ -50,8 +50,10 @@ const Navbar: React.FC = () => {
 
     try {
       const authenticatedFetch = createAuthenticatedFetch(token);
-      const response = await authenticatedFetch(`${API_BASE_URL}notifications/unread-count`);
-      
+      const response = await authenticatedFetch(
+        `${API_BASE_URL}notifications/unread-count`,
+      );
+
       if (response.ok) {
         const data = await response.json();
         setUnreadCount(data.count || 0);
@@ -94,9 +96,39 @@ const Navbar: React.FC = () => {
 
   const parts = pathname.split("/").filter(Boolean);
   const currentBase = parts[0];
-  const currentItem = NAV_ITEMS.find(item => item.href.includes(currentBase));
+  const currentItem = NAV_ITEMS.find((item) => item.href.includes(currentBase));
   const currentLabel = currentItem?.label || "Меню";
   const CurrentIcon = currentItem?.icon || LayoutGrid;
+
+  // --- Breadcrumbs для /anime/[slug] ---
+  const isAnimeSlugPage =
+    parts[0] === "anime" &&
+    parts[1] &&
+    !["top", "watch", "create-room"].includes(parts[1]);
+  // Мок-дані для назви аніме
+  const mockAnimeName = "Звичайний день у Коулуні";
+
+  // Визначаємо активний розділ
+  const animeSection =
+    parts.length === 2
+      ? "Загальне"
+      : parts[2] === "characters"
+        ? "Персонажі"
+        : parts[2] === "related"
+          ? "Пов’язане"
+          : parts[2] === "media"
+            ? "Медіа"
+            : parts[2] === "authors"
+              ? "Автори"
+              : "Загальне";
+
+  const sectionLinks = [
+    { label: "Загальне", href: `/anime/${parts[1]}` },
+    { label: "Персонажі", href: `/anime/${parts[1]}/characters` },
+    { label: "Пов’язане", href: `/anime/${parts[1]}/related` },
+    { label: "Медіа", href: `/anime/${parts[1]}/media` },
+    { label: "Автори", href: `/anime/${parts[1]}/authors` },
+  ];
 
   const handleLogout = async () => {
     try {
@@ -126,11 +158,62 @@ const Navbar: React.FC = () => {
             className="h-18 w-18 object-contain"
           />
         </Link>
+      ) : isAnimeSlugPage ? (
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 border border-[#5B7CB2] text-white"
+            onClick={() => router.push("/anime")}
+          >
+            <CurrentIcon className="h-5 w-5 text-[#4B7FCC]" />
+            {currentLabel}
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+          <span className="text-sm text-white">/</span>
+          <span className="inline-block h-2 w-2 rounded-full bg-[#23A6D5]"></span>
+          <Link
+            href={`/anime/${parts[1]}`}
+            className="text-sm font-medium text-white"
+          >
+            {mockAnimeName}
+          </Link>
+          <span className="text-sm text-white">/</span>
+          <div className="relative">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 border border-[#5B7CB2] text-white"
+              onClick={() => setNavOpen((open) => !open)}
+              type="button"
+            >
+              {animeSection}
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+            {navOpen && (
+              <div className="absolute left-0 z-50 mt-2 w-48 rounded-xl bg-[#1a1e2e] shadow-xl ring-1 ring-black/5">
+                <ul className="flex flex-col py-2">
+                  {sectionLinks.map((section) => (
+                    <Button
+                      key={section.href}
+                      variant="ghost"
+                      className="justify-start gap-2 text-white hover:bg-[#2C3650]"
+                      onClick={() => {
+                        setNavOpen(false);
+                        router.push(section.href);
+                      }}
+                    >
+                      {section.label}
+                    </Button>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
       ) : (
         <div className="relative">
           <Button
             variant="outline"
-            className="flex items-center gap-2 text-white border border-[#5B7CB2]"
+            className="flex items-center gap-2 border border-[#5B7CB2] text-white"
             onClick={() => setNavOpen((prev) => !prev)}
           >
             <CurrentIcon className="h-5 w-5 text-[#4B7FCC]" />
@@ -138,13 +221,13 @@ const Navbar: React.FC = () => {
             <ChevronDown className="h-4 w-4" />
           </Button>
           {navOpen && (
-            <div className="absolute left-0 mt-2 w-48 rounded-xl bg-[#1a1e2e] shadow-xl ring-1 ring-black/5 z-50">
+            <div className="absolute left-0 z-50 mt-2 w-48 rounded-xl bg-[#1a1e2e] shadow-xl ring-1 ring-black/5">
               <div className="flex flex-col gap-2 p-2">
                 {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
                   <Button
                     key={href}
                     variant="ghost"
-                    className="justify-start text-white hover:bg-[#2C3650] gap-2"
+                    className="justify-start gap-2 text-white hover:bg-[#2C3650]"
                     onClick={() => {
                       setNavOpen(false);
                       router.push(href);
@@ -237,8 +320,8 @@ const Navbar: React.FC = () => {
               </button>
               {/* Red notification badge */}
               {unreadCount > 0 && (
-                <div className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-lg animate-pulse">
-                  {unreadCount > 99 ? '99+' : unreadCount}
+                <div className="absolute -top-1 -right-1 flex h-5 w-5 animate-pulse items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-lg">
+                  {unreadCount > 99 ? "99+" : unreadCount}
                 </div>
               )}
             </div>
@@ -251,15 +334,15 @@ const Navbar: React.FC = () => {
                   alt="Аватар"
                   width={40}
                   height={40}
-                  className="h-10 w-10 rounded-full object-cover border border-[#5B7CB2]"
+                  className="h-10 w-10 rounded-full border border-[#5B7CB2] object-cover"
                 />
               </Menu.Button>
-              <Menu.Items className="absolute right-0 mt-2 w-48 rounded-xl bg-[#1a1e2e] shadow-xl ring-1 ring-black/5 z-50 focus:outline-none">
+              <Menu.Items className="absolute right-0 z-50 mt-2 w-48 rounded-xl bg-[#1a1e2e] shadow-xl ring-1 ring-black/5 focus:outline-none">
                 <Menu.Item>
                   {({ active }) => (
                     <Link
                       href="/profile"
-                      className={`block px-4 py-3 text-sm rounded-t-xl ${active ? "bg-[#2C3650]" : ""} text-white`}
+                      className={`block rounded-t-xl px-4 py-3 text-sm ${active ? "bg-[#2C3650]" : ""} text-white`}
                     >
                       Профіль
                     </Link>
@@ -290,7 +373,7 @@ const Navbar: React.FC = () => {
                     <button
                       onClick={handleLogout}
                       disabled={loading}
-                      className={`w-full text-left px-4 py-3 text-sm rounded-b-xl ${active ? "bg-[#2C3650]" : ""} text-white ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                      className={`w-full rounded-b-xl px-4 py-3 text-left text-sm ${active ? "bg-[#2C3650]" : ""} text-white ${loading ? "cursor-not-allowed opacity-50" : ""}`}
                     >
                       {loading ? "Виходимо..." : "Вийти"}
                     </button>
@@ -299,7 +382,10 @@ const Navbar: React.FC = () => {
               </Menu.Items>
             </Menu>
 
-            <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
+            <SearchModal
+              open={searchOpen}
+              onClose={() => setSearchOpen(false)}
+            />
             <NotificationModal
               isOpen={notifOpen}
               onClose={() => setNotifOpen(false)}

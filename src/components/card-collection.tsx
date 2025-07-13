@@ -83,7 +83,7 @@ const CardCollection: React.FC<CardCollectionProps> = ({
   return (
     <section className="xs:py-4 flex w-full flex-col items-center py-10">
       <div className="relative mx-auto w-full max-w-[1400px]">
-        <div className="xs:mb-4 mb-8 flex items-center justify-between pr-2 pl-2">
+        <div className="xs:mb-4 mb-8 flex items-center justify-between">
           <h2 className="xs:text-lg text-4xl font-bold tracking-tight text-white sm:text-2xl">
             {title}
           </h2>
@@ -210,17 +210,22 @@ const CardCollection: React.FC<CardCollectionProps> = ({
               margin: "0 auto",
             }}
           >
-            {items.map((anime, idx) => (
-              <div
-                key={anime.title + idx}
-                className={cardType === "author" ? undefined : "flex-shrink-0"}
-                style={{ width: isMobile ? 220 : 320 }}
-              >
-                {cardType === "anime" && <AnimeCard {...anime} />}
-                {cardType === "voice-actor" && <VoiceActorCard {...anime} />}
-                {cardType === "author" && <AuthorCardComponent {...anime} />}
-              </div>
-            ))}
+            {items.map((anime, idx) =>
+              cardType === "author" ? (
+                <div key={anime.title + idx}>
+                  <AuthorCardComponent {...anime} />
+                </div>
+              ) : (
+                <div
+                  key={anime.title + idx}
+                  className="flex-shrink-0"
+                  style={{ width: isMobile ? 220 : 320 }}
+                >
+                  {cardType === "anime" && <AnimeCard {...anime} />}
+                  {cardType === "voice-actor" && <VoiceActorCard {...anime} />}
+                </div>
+              ),
+            )}
           </motion.div>
         )}
       </div>

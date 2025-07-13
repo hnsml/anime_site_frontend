@@ -24,7 +24,7 @@ const AnimeCharactersSection: React.FC<AnimeCharactersSectionProps> = ({
   if (!authors || authors.length === 0) {
     return (
       <section className="mx-auto w-full max-w-2xl">
-        <h2 className="text-white text-xl font-semibold mb-4">{title}</h2>
+        <h2 className="mb-4 text-xl font-semibold text-white">{title}</h2>
         <div className="text-[#888]">{text}</div>
       </section>
     );
@@ -32,12 +32,12 @@ const AnimeCharactersSection: React.FC<AnimeCharactersSectionProps> = ({
   const enrichedAuthors = authors.map((author) => ({
     ...author,
     link:
-      title === "Головні персонажі"
+      title === "Головні персонажі" || title === "Другорядні персонажі"
         ? `/characters/${author.slug}`
         : `/authors/${author.slug}`,
   }));
   return (
-    <section className="mx-auto w-full max-w-2xl">
+    <section className="w-full max-w-4xl">
       <CardCollection
         items={enrichedAuthors}
         cardType="author"

@@ -119,7 +119,7 @@ const CardCollection: React.FC<CardCollectionProps> = ({
   return (
     <section className="xs:py-4 flex w-full flex-col items-center py-10">
       <div className="relative mx-auto w-full max-w-[1400px]">
-        <div className="xs:mb-4 mb-8 flex items-center justify-between pr-2 pl-2">
+        <div className="xs:mb-4 mb-8 flex items-center justify-between">
           <h2 className="xs:text-lg text-4xl font-bold tracking-tight text-white sm:text-2xl">
             {title}
           </h2>
@@ -404,7 +404,7 @@ const CardCollection: React.FC<CardCollectionProps> = ({
         ) : (
           <motion.div
             ref={scrollRef}
-            className={`xs:gap-4 scrollbar-hide flex gap-2 overflow-x-auto px-2 pt-1 pb-2`}
+            className={`xs:gap-4 scrollbar-hide flex gap-2 overflow-x-auto pt-1 pb-2`}
             style={{
               scrollBehavior: "smooth",
               maxWidth: "1400px",
@@ -413,59 +413,61 @@ const CardCollection: React.FC<CardCollectionProps> = ({
               msOverflowStyle: "none",
             }}
           >
-            {items.map((item, idx) => (
-              <div
-                key={item.title ? item.title + idx : idx}
-                className={
-                  cardType === "author"
-                    ? undefined
-                    : cardType === "genre"
+            {items.map((item, idx) =>
+              cardType === "author" ? (
+                <div key={item.title ? item.title + idx : idx}>
+                  <AuthorCardComponent {...item} />
+                </div>
+              ) : (
+                <div
+                  key={item.title ? item.title + idx : idx}
+                  className={
+                    cardType === "genre"
                       ? "w-full"
                       : cardType === "top-anime"
                         ? undefined
                         : "flex-shrink-0"
-                }
-                style={
-                  cardType === "genre"
-                    ? { minWidth: "100%" }
-                    : cardType === "top-anime"
-                      ? { flexShrink: 0 }
-                      : { width: isMobile ? 220 : 320 }
-                }
-              >
-                {renderCard ? (
-                  renderCard(item, idx)
-                ) : cardType === "anime" ? (
-                  <AnimeCard {...item} />
-                ) : cardType === "voice-actor" ? (
-                  <VoiceActorCard {...item} />
-                ) : cardType === "comment" ? (
-                  <CommentCard {...item} />
-                ) : cardType === "top-user" ? (
-                  <TopUserCard {...item} />
-                ) : cardType === "continue-watching" ? (
-                  <ContinueWatchingCard {...item} />
-                ) : cardType === "genre" ? (
-                  <GenreCard {...item} />
-                ) : cardType === "release" ? (
-                  <ReleaseCard {...item} />
-                ) : cardType === "author" ? (
-                  <AuthorCardComponent {...item} />
-                ) : cardType === "top-anime" ? (
-                  <TopAnimeCard
-                    image={item.image}
-                    title={item.title}
-                    year={item.year}
-                    kind={item.kind}
-                    rank={item.rank ?? idx + 1}
-                    imdb_score={item.imdb_score}
-                    showRank={item.showRank}
-                    href={item.href}
-                    small={item.small}
-                  />
-                ) : null}
-              </div>
-            ))}
+                  }
+                  style={
+                    cardType === "genre"
+                      ? { minWidth: "100%" }
+                      : cardType === "top-anime"
+                        ? { flexShrink: 0 }
+                        : { width: isMobile ? 220 : 320 }
+                  }
+                >
+                  {renderCard ? (
+                    renderCard(item, idx)
+                  ) : cardType === "anime" ? (
+                    <AnimeCard {...item} />
+                  ) : cardType === "voice-actor" ? (
+                    <VoiceActorCard {...item} />
+                  ) : cardType === "comment" ? (
+                    <CommentCard {...item} />
+                  ) : cardType === "top-user" ? (
+                    <TopUserCard {...item} />
+                  ) : cardType === "continue-watching" ? (
+                    <ContinueWatchingCard {...item} />
+                  ) : cardType === "genre" ? (
+                    <GenreCard {...item} />
+                  ) : cardType === "release" ? (
+                    <ReleaseCard {...item} />
+                  ) : cardType === "top-anime" ? (
+                    <TopAnimeCard
+                      image={item.image}
+                      title={item.title}
+                      year={item.year}
+                      kind={item.kind}
+                      rank={item.rank ?? idx + 1}
+                      imdb_score={item.imdb_score}
+                      showRank={item.showRank}
+                      href={item.href}
+                      small={item.small}
+                    />
+                  ) : null}
+                </div>
+              ),
+            )}
           </motion.div>
         )}
       </div>

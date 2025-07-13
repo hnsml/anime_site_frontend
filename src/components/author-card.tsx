@@ -16,9 +16,9 @@ const AuthorCardComponent: React.FC<AuthorCardProps> = ({
 }) => (
   <Link
     href={link}
-    className="flex max-w-[240px] min-w-[220px] flex-col overflow-hidden rounded-2xl bg-black shadow-lg transition-all"
+    className="flex max-w-[170px] min-w-[150px] flex-col overflow-hidden rounded-2xl transition-all"
   >
-    <div className="flex aspect-[3/4] w-full items-center justify-center bg-[#23242A]">
+    <div className="flex aspect-[3/4] w-full items-center justify-center">
       <img
         src={image}
         alt={name}
